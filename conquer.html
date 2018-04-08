@@ -118,11 +118,28 @@
     //地形 0~5 一共6种地形
     var land_types = new Array('平原', '山地', '草地', '冰原', '沙漠', '沼泽');
     var land_type_colors = new Array('#FFFF99', '#999966', '#66cc00', '#ccffff', '#ffcc33', '#336699');
+    //
+    var res_types = new Array('粮食', '马匹', '矿石');
     //王国 一共有4个,其中0位置是默认无王国的
     var lord_colors = new Array('#eeeeee', '#333333', '#cc3366', '#339966', '#0099cc');
     var lord_max_num = 4;
     var cur_lord_num = 4;
     var citys = new Array();
+
+    function City(id, name, neighbor, land_type, lord) {
+        this.id = id;
+        this.name = name;
+        this.neighbor = neighbor;
+        this.land_type = land_type;
+        this.lord = lord || null;
+        this.state = 0;
+    }
+
+    function Lord(id) {
+        this.id = id;
+
+    }
+
     window.onload = function() {
         random_world();
         refresh_world();
