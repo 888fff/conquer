@@ -119,7 +119,9 @@
     var land_types = new Array('平原', '山地', '草地', '冰原', '沙漠', '沼泽');
     var land_type_colors = new Array('#FFFF99', '#999966', '#66cc00', '#ccffff', '#ffcc33', '#336699');
     //
-    var res_types = new Array('粮食', '马匹', '矿石');
+    var res_types = new Array('食物', '矿石', '棉花', '硫磺', '木材', '水');
+    var armament_types = new Array('马匹', '火枪', '战争器械', '防具', '服装', '武器');
+    var tech_types = new Array('指南针', '火药', '造纸术', '印刷术');
     //王国 一共有4个,其中0位置是默认无王国的
     var lord_colors = new Array('#eeeeee', '#333333', '#cc3366', '#339966', '#0099cc');
     var lord_max_num = 4;
@@ -175,7 +177,8 @@
 
     function refresh_world() {
         for (var i = 0; i < max_land_num; ++i) {
-            document.getElementById('land_' + i.toString()).firstElementChild.setAttribute('fill', land_type_colors[citys[i].land_type]);
+            document.getElementById('land_' + i.toString()).firstElementChild.setAttribute('fill', land_type_colors[
+                citys[i].land_type]);
             var lord_slot = document.getElementById('lord_slot_' + i.toString());
             lord_slot.firstElementChild.setAttribute('fill', lord_colors[parseInt(lord_slot.getAttribute('lord'))]);
         }
