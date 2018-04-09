@@ -116,33 +116,104 @@
     var last_select_land = null;
     var max_land_num = 9;
     //地形 0~5 一共6种地形
+    /*
+        @ - 包含资源 （由高至低）
+        # - 战斗影响
+        平原：  @ 食物 棉花 水 木材        # 无               
+        山地：  @ 矿石 硫磺 木材 食物      # 战斗方攻击降低 10%
+        草地：  @ 棉花 食物 水             # 无
+        冰原：  @ 水 矿石 木材             # 战斗方士气降低 10%，每回合额外消耗食物
+        沙漠：  @ 矿石 硫磺                # 战斗方士气降低 10%，每回合额外损失兵力
+        沼泽：  @ 水 食物 木材 硫磺         # 行军速度降低50% 战斗方攻击降低 10%
+    
+    */
     var land_types = new Array('平原', '山地', '草地', '冰原', '沙漠', '沼泽');
     var land_type_colors = new Array('#FFFF99', '#999966', '#66cc00', '#ccffff', '#ffcc33', '#336699');
-    //
+    //地形中，资源的增长值
+    var land_res_increase = new Array(
+        //以每回合增加10为峰值
+        new Array(10,0,8,0,6,4),
+        new Array(0,8,0,7,6,2),
+        new Array(8,0,10,0,0,6),
+        new Array(0,4,0,0,4,9),
+        new Array(0,3,0,2,0,0),
+        new Array(3,0,0,1,2,4),      
+    );
+    //资源类型
     var res_types = new Array('食物', '矿石', '棉花', '硫磺', '木材', '水');
+    //军备类型
+    /*
+        马匹：增加军团行军速度，在平原，草地，沙漠提升攻击力，在沼泽和冰原减少攻击力
+        火枪：增加军团攻击力，减少 马匹 在战争中的额外效果，
+        战争机器：无视防守方的额外加成
+        防具：减少进攻方的攻击力
+        服装：增加士气，在冰原上攻击力提升
+        武器：增加军团攻击力
+    */
     var armament_types = new Array('马匹', '火枪', '战争器械', '防具', '服装', '武器');
+    //军备研发依赖{资源}的类型,以最大消耗 5 为最大值   [对于火枪和战争机械额外判断]
+    var armament_depend = new Array(
+        new Array(1,0,0,0,1,2),
+        new Array(0,1,1,2,3,0),
+        new Array(0,3,0,0,4,0),
+        new Array(0,1,1,0,2,0),
+        new Array(0,0,3,0,1,0),
+        new Array(0,2,0,0,3,0)
+    );
+    //科技提升
+    /*
+        指南针：对整个领土有效，加强军团行军的速度
+        火药：  可以在军备中战争火枪
+        造纸术：可以在军备中研发战争机械
+        印刷术：可以使城镇幸福指数升高，征兵比例提升
+    */
     var tech_types = new Array('指南针', '火药', '造纸术', '印刷术');
     //王国 一共有4个,其中0位置是默认无王国的
     var lord_colors = new Array('#eeeeee', '#333333', '#cc3366', '#339966', '#0099cc');
+    //最大王国数目
     var lord_max_num = 4;
-    var cur_lord_num = 4;
-    var citys = new Array();
+    //初始王国数目
+    var init_lord_num = 2;
+    var lands = new Array();
+    /*基础比例常量*/
+    //征兵
+    var conscription = { min: 0.1, max: 0.15 };
+    //城镇派出军团的限制，仅当所派出的军团到达目的地，或者消亡后，才可以继续远征
+    var lord_match_limit = 3
+    //每回合每个士兵消耗的补给
+    var cost_supply = 0.1;
+    //当补给不足时，每回合死亡的军队数目比列
+    var famine_dead = 0.05; //意味着，在没有补给的情况下，可以坚持20回合，哈哈   
+    /*-------------------
+        游戏对象的定义
+    --------------------*/
+    function Land(id, name, neighbor, land_type, lord) {
+        this.id = id;                   //地形ID
+        this.name = name;               //地形名称
+        this.neighbor = neighbor;       //相邻地形
+        this.land_type = land_type;     //地形类型
+        this.lord = lord || null;       //此地形的领主
+        this.state = 0;                 //当地形的状态
+        this.hasRes = new Array(res_types.length);  //此地形初始有什么资源
 
-    function City(id, name, neighbor, land_type, lord) {
-        this.id = id;
-        this.name = name;
-        this.neighbor = neighbor;
-        this.land_type = land_type;
-        this.lord = lord || null;
-        this.state = 0;
     }
 
-    function Lord(id) {
+    function Lord(id, p, h) {
         this.id = id;
-
+        this.population = p;
+        this.techs = -1;    //默认选择一个开始科技
+        this.happiness = h;
+        this.matching_legion = new Array(3);
     }
 
-    window.onload = function() {
+    function Legion(n, m ,s) {
+        this.num = n;
+        this.armaments = new Array(armament_types.length);   //其中,数组中的每个元素,就是这个军团的军备数目
+        this.morale = m;
+        this.supply = s;
+    }
+
+    window.onload = function () {
         random_world();
         refresh_world();
     }
@@ -156,7 +227,7 @@
             dests.forEach(n => {
                 links.push(parseInt(n));
             });
-            citys.push({
+            lands.push({
                 name: 'land_' + i,
                 id: i,
                 neighbor: links,
@@ -164,7 +235,7 @@
             });
         }
 
-        for (var i = 1; i <= cur_lord_num; ++i) {
+        for (var i = 1; i <= init_lord_num; ++i) {
             var lt = parseInt(Math.random() * 100) % max_land_num;
             var lord_slot = document.getElementById('lord_slot_' + lt.toString());
             if (lord_slot.getAttribute('lord') == '0') {
@@ -178,7 +249,7 @@
     function refresh_world() {
         for (var i = 0; i < max_land_num; ++i) {
             document.getElementById('land_' + i.toString()).firstElementChild.setAttribute('fill', land_type_colors[
-                citys[i].land_type]);
+                lands[i].land_type]);
             var lord_slot = document.getElementById('lord_slot_' + i.toString());
             lord_slot.firstElementChild.setAttribute('fill', lord_colors[parseInt(lord_slot.getAttribute('lord'))]);
         }
@@ -199,7 +270,7 @@
     }
 
     function get_land(item_id) {
-        return citys[parseInt(item_id.split('_')[1])];
+        return lands[parseInt(item_id.split('_')[1])];
     }
 </script>
 
