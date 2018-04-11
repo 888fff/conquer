@@ -114,7 +114,9 @@
 </body>
 <script>
     var last_select_land = null;
-    var max_land_num = 9;
+    var lands = new Array();
+    //
+    var MAX_LAND_NUM = 9;
     //地形 0~5 一共6种地形
     /*
         @ - 包含资源 （由高至低）
@@ -127,10 +129,10 @@
         沼泽：  @ 水 食物 木材 硫磺          # 行军速度降低50% 战斗方攻击降低 10%
     
     */
-    var land_types = new Array('平原', '山地', '草地', '冰原', '沙漠', '沼泽');
-    var land_type_colors = new Array('#FFFF99', '#999966', '#66cc00', '#ccffff', '#ffcc33', '#336699');
+    var LAND_TYPES = new Array('平原', '山地', '草地', '冰原', '沙漠', '沼泽');
+    var LAND_TYPE_COLORS = new Array('#FFFF99', '#999966', '#66cc00', '#ccffff', '#ffcc33', '#336699');
     //地形中，资源的增长值
-    var land_res_increase = new Array(
+    var LAND_RES_INCREASE = new Array(
         //以每回合增加10为峰值
         new Array(10, 0, 8, 0, 6, 4),
         new Array(0, 8, 0, 7, 6, 2),
@@ -140,7 +142,7 @@
         new Array(3, 0, 0, 1, 2, 4),
     );
     //资源类型
-    var res_types = new Array('食物', '矿石', '棉花', '硫磺', '木材', '水');
+    var RES_TYPES = new Array('食物', '矿石', '棉花', '硫磺', '木材', '水');
     //军备类型
     /*
         马匹：增加军团行军速度，在平原，草地，沙漠提升攻击力，在沼泽和冰原减少攻击力
@@ -150,9 +152,9 @@
         服装：增加士气，在冰原上攻击力提升
         武器：增加军团攻击力
     */
-    var armament_types = new Array('马匹', '火枪', '战争器械', '防具', '服装', '武器');
+    var ARMAMENT_TYPES = new Array('马匹', '火枪', '战争器械', '防具', '服装', '武器');
     //军备研发依赖{资源}的类型,以最大消耗 5 为最大值   [对于火枪和战争机械额外判断]
-    var armament_depend = new Array(
+    var ARMAMENT_DEPEND = new Array(
         new Array(1, 0, 0, 0, 1, 2),
         new Array(0, 1, 1, 2, 3, 0),
         new Array(0, 3, 0, 0, 4, 0),
@@ -167,17 +169,12 @@
         造纸术：可以在军备中研发战争机械
         印刷术：可以使城镇幸福指数升高，征兵比例提升
     */
-    var tech_types = new Array('无科技', '指南针', '火药', '造纸术', '印刷术');
+    var TECH_TYPES = new Array('无科技', '指南针', '火药', '造纸术', '印刷术');
     //王国 一共有4个,其中0位置是默认无王国的
-    var lord_colors = new Array('#eeeeee', '#333333', '#cc3366', '#339966', '#0099cc');
-
-    var lands = new Array();
+    var LORD_COLORS = new Array('#eeeeee', '#333333', '#cc3366', '#339966', '#0099cc');
     /*基础比例常量*/
     //征兵
-    var conscription = {
-        min: 0.1,
-        max: 0.15
-    };
+    var CONSCRIPTION_RATE = 0.1;
     //最大王国数目
     var LORD_MAX_NUM = 4;
     //初始王国数目
@@ -188,7 +185,29 @@
     var COST_SUPPLY = 0.1;
     //当补给不足时，每回合死亡的军队数目比列
     var FAMINE_DEAD = 0.05; //意味着，在没有补给的情况下，可以坚持20回合，哈哈
-    var FAMINE_DEAD_CONST = 10;
+    var FAMINE_DEAD_CONST = 10; //饥饿情况下固定死亡常数
+    var FAMINE_LOSE_MORALE = 5; //饥荒下，士气值每回合损失
+    //王国人口数目上限
+    var POPULATION_LIMIT = 5000;
+    //触发损失幸福值的基数值
+    var LOST_HAPPINESS_BASE = 10;
+    //损失幸福指数比例范围
+    var LOST_HAPPINESS_RANGE = {
+        min: 0.02,
+        max: 0.1
+    };
+    //幸福值增长数目
+    var HAPPINESS_INC = 5;
+    //
+    var MORALE_2_HAPPINESS = 10;
+    /////////////
+    var random_range = function(min, max) {
+        if (max == null) {
+            max = min;
+            min = 0;
+        }
+        return min + Math.floor(Math.random() * (max - min + 1));
+    };
     /*-------------------
         游戏对象的定义
     --------------------*/
@@ -198,47 +217,116 @@
         this.neighbor = neighbor; //相邻地形
         this.land_type = land_type; //地形类型
         this.lord = lord || null; //此地形的领主
-        this.state = 0; //当地形的状态
-        this.hasRes = new Array(res_types.length); //此地形初始有什么资源
-
     }
 
     function Lord(mother, owner, p, h) {
         this.motherland = mother; //所属大陆地形
-        this.owner = owner || 0; //所属玩家
+        this.owner = owner || 0; //所属玩家,玩家ID
         this.population = p || 0; //人口
-        this.happiness = h || 0; //幸福度
+        this.happiness = h || 0; //幸福度，影响人口的增长比率
         this.matching_legion = new Array(3); //远征部队
         this.techs = 0; //默认选择一个开始科技
+        this.state = 0; //此王国的状态
+        this.res = new Array(RES_TYPES.length); //此王国初始有什么资源
+        //---------------------一些隐藏的因素因子
+        this.beConscripted = 0; //被征兵次数
         //
         this.getID = function() {
             return this.motherland.id;
-        }
+        };
+        this.getMaxConscriptNum = function() {
+            return this.population * CONSCRIPTION_RATE;
+        };
+        //融合一个远征军
+        this.absorbLegion = function(lg) {
+            if (this.owner == lg.owner) {
+                this.population = Math.min(this.population + lg.num, POPULATION_LIMIT);
+                this.res[0] += lg.supply;
+                this.happiness += lg.moraleToHappiness();
+                ls.destory();
+            } else {
+                //开始攻击
+            }
+        };
+        //损失一个远征军
+        this.lostLegion = function(lg) {
+
+        };
+        //行动-派军远征
+        this.expedition = function(n, s, dest) {
+            this.matching_legion.forEach(lg => {
+                if (lg.isActive == false && n <= this.getMaxConscriptNum() && s <= this.res[0] && dest <= lands.length) {
+                    lg.reset(n, 1, s, dest.this.owner);
+                    this.population -= n;
+                    this.res[0] -= s;
+                    //如果小于，则触发损失幸福值
+                    if (random_range(0, LOST_HAPPINESS_BASE) < this.beConscripted) {
+                        this.happiness -= (this.happiness * random_range(LOST_HAPPINESS_RANGE.min, LOST_HAPPINESS_RANGE.max));
+                        if (this.happiness < 0) {
+                            this.happiness = 0;
+                        }
+                    }
+                }
+            });
+        };
+        //行动-发展王国
+        this.develop = function() {
+            for (var i = 0; i < this.res.length; ++i) {
+                this.res[i] += LAND_RES_INCREASE[this.motherland.land_type][i];
+            }
+            this.happiness += HAPPINESS_INC;
+        };
+        //行动-研发军备
+        this.research = function() {
+
+        };
 
     }
 
-    function Legion(n, m, s) {
-        this.num = n; //部队数目
-        this.armaments = new Array(armament_types.length); //其中,数组中的每个元素,就是这个军团的军备数目
-        this.morale = m; //士气 
-        this.supply = s; //补给
+    function Legion(n, m, s, owner) {
+        this.num = n || 0; //部队数目
+        //其中,数组中的每个元素,就是这个军团的军备数目
+        this.armaments = new Array(ARMAMENT_TYPES.length);
+        this.morale = m || 1; //士气 
+        this.supply = s || 0; //补给
+        this.isActive = false; //是否是激活状态
+        this.destLand = -1; //目的大陆
+        this.owner = owner; //所属玩家
         //死亡数目
         this.dead_num = 0;
         //---
-        this.finishTurn = function() {
-                //当补给不足时，部队死亡
-                if (this.supply < 0) {
-                    this.dead_num = this.num * FAMINE_DEAD + FAMINE_DEAD_CONST;
-                    this.num -= this.dead_num;
+        this._finishTurn = function() {
+            //当补给不足时，部队死亡部分
+            if (this.supply < 0 && this.isActive) {
+                this.dead_num = this.num * FAMINE_DEAD + FAMINE_DEAD_CONST;
+                this.num -= this.dead_num;
+                this.morale = Math.max(0, this.morale - FAMINE_LOSE_MORALE);
+                if (this.num <= 0) {
+                    this.destory();
                 }
-                this.supply -= this.COST_SUPPLY * this.num;
             }
-            //
+            this.supply -= this.COST_SUPPLY * this.num;
+        };
+        //
         this.destory = function() {
-
-            }
-            //
-        this.reset = function() {
+            this.isActive = false;
+        };
+        //
+        this.reset = function(n, m, s, d, o) {
+            this.isActive = true;
+            this.num = n;
+            this.morale = m;
+            this.supply = s;
+            this.dead_num = 0;
+            this.destLand = d; //目的大陆
+            this.owner = o;
+        };
+        //
+        this.moraleToHappiness = function() {
+            return (this.morale - 1) * MORALE_2_HAPPINESS;
+        };
+        //
+        this.goMatching = function() {
 
         }
     }
@@ -256,8 +344,8 @@
     }
 
     function random_world() {
-        for (var i = 0; i < max_land_num; ++i) {
-            var lt = parseInt(Math.random() * 100) % land_types.length;
+        for (var i = 0; i < MAX_LAND_NUM; ++i) {
+            var lt = parseInt(Math.random() * 100) % LAND_TYPES.length;
             var land_block = document.getElementById('land_' + i.toString());
             var dests = land_block.getAttribute('link').split(',');
             var links = new Array();
@@ -268,7 +356,7 @@
         }
 
         for (var i = 1; i <= INIT_LORD_NUM; ++i) {
-            var lt = parseInt(Math.random() * 100) % max_land_num;
+            var lt = parseInt(Math.random() * 100) % MAX_LAND_NUM;
             var lord_slot = document.getElementById('lord_slot_' + lt.toString());
             if (lord_slot.getAttribute('lord') == '0') {
                 lord_slot.setAttribute('lord', i.toString());
@@ -279,11 +367,11 @@
     }
 
     function refresh_world() {
-        for (var i = 0; i < max_land_num; ++i) {
-            document.getElementById('land_' + i.toString()).firstElementChild.setAttribute('fill', land_type_colors[
+        for (var i = 0; i < MAX_LAND_NUM; ++i) {
+            document.getElementById('land_' + i.toString()).firstElementChild.setAttribute('fill', LAND_TYPE_COLORS[
                 lands[i].land_type]);
             var lord_slot = document.getElementById('lord_slot_' + i.toString());
-            lord_slot.firstElementChild.setAttribute('fill', lord_colors[parseInt(lord_slot.getAttribute('lord'))]);
+            lord_slot.firstElementChild.setAttribute('fill', LORD_COLORS[parseInt(lord_slot.getAttribute('lord'))]);
         }
     }
 
