@@ -119,12 +119,12 @@
     /*
         @ - 包含资源 （由高至低）
         # - 战斗影响
-        平原：  @ 食物 棉花 水 木材        # 无               
-        山地：  @ 矿石 硫磺 木材 食物      # 战斗方攻击降低 10%
-        草地：  @ 棉花 食物 水             # 无
-        冰原：  @ 水 矿石 木材             # 战斗方士气降低 10%，每回合额外消耗食物
-        沙漠：  @ 矿石 硫磺                # 战斗方士气降低 10%，每回合额外损失兵力
-        沼泽：  @ 水 食物 木材 硫磺         # 行军速度降低50% 战斗方攻击降低 10%
+        平原：  @ 食物 棉花 水 木材         # 无               
+        山地：  @ 矿石 硫磺 木材 食物       # 战斗方攻击降低 10%
+        草地：  @ 棉花 食物 水              # 无
+        冰原：  @ 水 矿石 木材              # 战斗方士气降低 10%，每回合额外消耗食物
+        沙漠：  @ 矿石 硫磺                 # 战斗方士气降低 10%，每回合额外损失兵力
+        沼泽：  @ 水 食物 木材 硫磺          # 行军速度降低50% 战斗方攻击降低 10%
     
     */
     var land_types = new Array('平原', '山地', '草地', '冰原', '沙漠', '沼泽');
@@ -167,13 +167,10 @@
         造纸术：可以在军备中研发战争机械
         印刷术：可以使城镇幸福指数升高，征兵比例提升
     */
-    var tech_types = new Array('指南针', '火药', '造纸术', '印刷术');
+    var tech_types = new Array('无科技', '指南针', '火药', '造纸术', '印刷术');
     //王国 一共有4个,其中0位置是默认无王国的
     var lord_colors = new Array('#eeeeee', '#333333', '#cc3366', '#339966', '#0099cc');
-    //最大王国数目
-    var lord_max_num = 4;
-    //初始王国数目
-    var init_lord_num = 2;
+
     var lands = new Array();
     /*基础比例常量*/
     //征兵
@@ -181,12 +178,17 @@
         min: 0.1,
         max: 0.15
     };
+    //最大王国数目
+    var LORD_MAX_NUM = 4;
+    //初始王国数目
+    var INIT_LORD_NUM = 2;
     //城镇派出军团的限制，仅当所派出的军团到达目的地，或者消亡后，才可以继续远征
-    var lord_match_limit = 3
-        //每回合每个士兵消耗的补给
-    var cost_supply = 0.1;
+    var LORD_MATCH_LIMIT = 3;
+    //每回合每个士兵消耗的补给
+    var COST_SUPPLY = 0.1;
     //当补给不足时，每回合死亡的军队数目比列
-    var famine_dead = 0.05; //意味着，在没有补给的情况下，可以坚持20回合，哈哈   
+    var FAMINE_DEAD = 0.05; //意味着，在没有补给的情况下，可以坚持20回合，哈哈
+    var FAMINE_DEAD_CONST = 10;
     /*-------------------
         游戏对象的定义
     --------------------*/
@@ -201,19 +203,51 @@
 
     }
 
-    function Lord(id, p, h) {
-        this.id = id;
-        this.population = p;
-        this.techs = -1; //默认选择一个开始科技
-        this.happiness = h;
-        this.matching_legion = new Array(3);
+    function Lord(mother, owner, p, h) {
+        this.motherland = mother; //所属大陆地形
+        this.owner = owner || 0; //所属玩家
+        this.population = p || 0; //人口
+        this.happiness = h || 0; //幸福度
+        this.matching_legion = new Array(3); //远征部队
+        this.techs = 0; //默认选择一个开始科技
+        //
+        this.getID = function() {
+            return this.motherland.id;
+        }
+
     }
 
     function Legion(n, m, s) {
-        this.num = n;
+        this.num = n; //部队数目
         this.armaments = new Array(armament_types.length); //其中,数组中的每个元素,就是这个军团的军备数目
-        this.morale = m;
-        this.supply = s;
+        this.morale = m; //士气 
+        this.supply = s; //补给
+        //死亡数目
+        this.dead_num = 0;
+        //---
+        this.finishTurn = function() {
+                //当补给不足时，部队死亡
+                if (this.supply < 0) {
+                    this.dead_num = this.num * FAMINE_DEAD + FAMINE_DEAD_CONST;
+                    this.num -= this.dead_num;
+                }
+                this.supply -= this.COST_SUPPLY * this.num;
+            }
+            //
+        this.destory = function() {
+
+            }
+            //
+        this.reset = function() {
+
+        }
+    }
+
+    //
+    //  玩家
+    //
+    function Player() {
+
     }
 
     window.onload = function() {
@@ -230,15 +264,10 @@
             dests.forEach(n => {
                 links.push(parseInt(n));
             });
-            lands.push({
-                name: 'land_' + i,
-                id: i,
-                neighbor: links,
-                land_type: lt
-            });
+            lands.push(new Land(i, 'land_' + i, links, lt, new Lord()));
         }
 
-        for (var i = 1; i <= init_lord_num; ++i) {
+        for (var i = 1; i <= INIT_LORD_NUM; ++i) {
             var lt = parseInt(Math.random() * 100) % max_land_num;
             var lord_slot = document.getElementById('lord_slot_' + lt.toString());
             if (lord_slot.getAttribute('lord') == '0') {
