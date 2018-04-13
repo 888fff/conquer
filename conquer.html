@@ -117,7 +117,9 @@
             <button onclick="test_get_player_info()">得到玩家信息</button>
             <button onclick="test_get_lord_info()">得到王国信息</button>
             <button onclick="test_do_expedition()">派兵远征</button>
-
+        </div>
+        <div id="info">
+            <h4>信息在这里</h4>
         </div>
     </center>
 </body>
@@ -492,6 +494,11 @@
     function get_land(item_id) {
         return g_lands[parseInt(item_id.split('_')[1])];
     }
+
+    function get_last_select_land() {
+        var id = last_select_land.id;
+        return (get_land(id));
+    }
     /*
         测试用
     */
@@ -500,11 +507,13 @@
     }
 
     function test_get_player_info() {
-
+        var info = document.getElementById('info');
+        var last_select_land
+        info.innerHTML = "<h3>info:" + g_PlayerManager.getPlayer(1) + "</h3>";
     }
 
     function test_get_lord_info() {
-
+        var land = get_last_select_land;
     }
 
     function test_do_expedition() {
