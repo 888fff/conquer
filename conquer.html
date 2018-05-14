@@ -118,8 +118,9 @@
             <button onclick="test_get_lord_info()">得到王国信息</button>
             <button onclick="test_do_expedition()">派兵远征</button>
         </div>
-        <div id="info">
+        <div>
             <h4>信息在这里</h4>
+            <h5 id="info">xxxxxxxxx</h5>
         </div>
     </center>
 </body>
@@ -221,6 +222,8 @@
         }
         return min + Math.floor(Math.random() * (max - min + 1));
     };
+    //玩家管理器
+    var g_PlayerManager = null;
     /*-------------------
         游戏对象的定义
     --------------------*/
@@ -408,7 +411,8 @@
             alert("AI thinked!");
         }
     }
-    var g_PlayerManager = function() {
+
+    function PlayerManager() {
         this.players = new Array(INIT_PLAYER_NUM + 1);
         this.curPlayer = 0;
         this.initManager = function() {
@@ -434,12 +438,17 @@
             });
         }
     };
+    //
+
     ///////////////////////////////////////
     //
     //      Game相关
     //
     ////////////////////////////////////////
     window.onload = function() {
+        g_PlayerManager = new PlayerManager();
+        g_PlayerManager.initManager();
+        //
         random_world();
         refresh_world();
     }
@@ -509,7 +518,7 @@
     function test_get_player_info() {
         var info = document.getElementById('info');
         var last_select_land
-        info.innerHTML = "<h3>info:" + g_PlayerManager.getPlayer(1) + "</h3>";
+        info.innerText = "info:" + g_PlayerManager.getPlayer(1);
     }
 
     function test_get_lord_info() {
