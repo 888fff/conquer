@@ -184,21 +184,24 @@ function Lord(landID, ownerID, p, h) {
     };
     //行动-派军远征
     this.expedition = function(n, s, dest) {
+        var self = this;
+        var success_expedition = false;
         _.each(this.matching_legion, function(lg, index) {
-            if (lg.isActive == false && n <= this.getMaxConscriptNum() && s <= this.res[0] && dest <=
-                g_lands.length) {
-                lg.reset(n, 1, s, dest, this.ownerID);
-                this.population -= n;
-                this.res[0] -= s;
-                this.beConscripted++;
+            if (lg.isActive == false && n <= self.getMaxConscriptNum() && s <= self.res[0] && dest <=
+                g_lands.length && !success_expedition) {
+                lg.reset(n, 1, s, dest, self.ownerID);
+                self.population -= n;
+                self.res[0] -= s;
+                self.beConscripted++;
                 //如果小于，则触发损失幸福值
-                if (random_range(0, LOST_HAPPINESS_BASE) < this.beConscripted) {
-                    this.happiness -= (this.happiness * random_range(LOST_HAPPINESS_RANGE.min,
+                if (random_range(0, LOST_HAPPINESS_BASE) < self.beConscripted) {
+                    self.happiness -= (self.happiness * random_range(LOST_HAPPINESS_RANGE.min,
                         LOST_HAPPINESS_RANGE.max));
-                    if (this.happiness < 0) {
-                        this.happiness = 0;
+                    if (self.happiness < 0) {
+                        self.happiness = 0;
                     }
                 }
+                success_expedition = true;
             }
         });
     };
@@ -425,8 +428,8 @@ function select_lord(item) {
     if (player.state == PLAYER_LORD_SELECT) {
         var ownerID = g_lands[parseInt(item.id.split('_')[2])].lord.ownerID;
         last_select_lord = g_lands[parseInt(item.id.split('_')[2])].lord;
-        land.lord.expedition(20, 50, last_select_lord.landID);
-        g_PlayerManager.getPlayer(1).state == PLAYER_LAND_SELECT;
+        land.lord.expedition(20, 0, last_select_lord.landID);
+        g_PlayerManager.getPlayer(1).state = PLAYER_LAND_SELECT;
     }
 }
 
