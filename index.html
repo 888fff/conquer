@@ -1,12 +1,192 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>这是888fff的GIT页面</title>
-</head>
-<body>
-    
-</body>
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>征服</title>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" media="screen" href="index.css">
+        <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <link rel="apple-touch-icon" href="icons/touch-icon-iphone-60x60.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="icons/touch-icon-ipad-76x76.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="icons/touch-icon-iphone-retina-120x120.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="icons/touch-icon-ipad-retina-152x152.png">
+        <link rel="manifest" href="manifest.json">
+    </head>
+    <body>
+        <br>
+        <div>
+            <button id = "btn_link" onclick= "link2Server()">连接服务器</button>
+            <button id = "btn_start" onclick= "startConquer()" disabled="disabled">请求开始游戏</button>
+            <button id = "btn_ready" onclick= "readyConquer()" disabled="disabled">准备</button>
+            <button id = "btn_quit" onclick= "quitConquer()" disabled="disabled">退出游戏</button>
+            IP: <input id="ip_input" type="text" name="ip" value="127.0.0.1"/>
+            Name: <input id="user_input" type="text" name="user" value="wwh"/>
+
+        </div>
+        <hr>
+
+    <!-- Canvas placeholder -->
+        <div id="screen"></div>
+
+        <!-- es5/es6 shim for legacy browsers" -->
+        <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.5.11/es5-shim.min.js"></script>-->
+        <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.5.11/es5-sham.min.js"></script>-->
+        <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.35.3/es6-shim.min.js"></script>-->
+        <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.35.3/es6-sham.min.js"></script>-->
+
+        <!-- melonJS Library -->
+        <!-- build:js js/app.min.js -->
+        <script type="text/javascript" src="lib/melonjs.js"></script>
+
+        <!-- Plugin(s) -->
+        <script type="text/javascript" src="lib/plugins/debug/debugPanel.js"></script>
+
+        <!-- Game Scripts -->
+        <script type="text/javascript" src="js/game.js"></script>
+        <!-- <script type="text/javascript" src="build/js/resources.js"></script> -->
+        <script type="text/javascript" src="js/resources.js"></script>
+
+
+        <script type="text/javascript" src="js/entities/entities.js"></script>
+        <script type="text/javascript" src="js/entities/Territory.js"></script>
+        <script type="text/javascript" src="js/entities/World.js"></script>
+        <script type="text/javascript" src="js/entities/TSelect.js"></script>
+        <script type="text/javascript" src="js/entities/Overlord.js"></script>
+        <script type="text/javascript" src="js/entities/GameManager.js"></script>
+        <script type="text/javascript" src="js/entities/VFX_Layer.js"></script>
+
+
+        <script type="text/javascript" src="js/class/Net.js"></script>
+        <script type="text/javascript" src="js/class/DataCache.js"></script>
+
+
+
+        <script type="text/javascript" src="js/entities/HUD.js"></script>
+        <script type="text/javascript" src="js/entities/UIContainer.js"></script>
+
+
+
+        <script type="text/javascript" src="js/screens/Intro.js"></script>
+        <script type="text/javascript" src="js/screens/ReadyScreen.js"></script>
+        <script type="text/javascript" src="js/screens/Play.js"></script>
+        <!-- /build -->
+
+        <!-- Bootstrap -->
+        <script type="text/javascript">
+            me.device.onReady(function onReady() {
+                game.onload();
+            });
+            function downFile(blob, fileName) {
+                if (window.navigator.msSaveOrOpenBlob) {
+                    navigator.msSaveBlob(blob, fileName);
+                } else {
+                    var link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.download = fileName;
+                    link.click();
+                    window.URL.revokeObjectURL(link.href);
+                }
+            }
+            //首先链接网关服务器，成功之后，服务器会发送一个玩家ID和token，玩家拿这个id和token再次连接服务器，则进入大厅
+            //但是目前的流程不科学，先按照目前的来吧，之后再调整
+            //目前的流程是，根据IP，链接服务器，然后服务器会发送客户端一个欢迎信息，客户端拿到信息后开始登陆服务器
+            function link2Server( ){
+                var ip = document.getElementById('ip_input').value;
+                var user = document.getElementById('user_input').value;
+                console.log("request connecting to the server[" + ip + ']');
+                //模拟服务器发送一个进入lobby的消息
+                setTimeout(onMsg_EnterLobby,0);
+            }
+            //玩家向服务器申请一个新的棋局，然后等待玩家加入
+            function startConquer( ){
+                //
+                console.log("request a new game-round");
+                //模拟服务器发送一个请求棋局的消息
+                setTimeout(onMsg_EnterRoomSuccess,0);
+
+            }
+            //退出游戏
+            function quitConquer(){
+                console.log("request quit the game!");
+                //模拟服务器发送一个进入lobby的消息
+                setTimeout(onMsg_QuitGameSuccess,0);
+            }
+            function readyConquer() {
+                console.log("request set ready game!");
+                setTimeout(onMsg_SetReadySuccess,0);
+            }
+            //响应服务器的消息函数Room
+            function onMsg_EnterLobby(data){
+                console.warn("client get into the lobby");
+                document.getElementById('btn_link').disabled = true;
+                document.getElementById('btn_start').disabled = false;
+                document.getElementById('btn_quit').disabled = false;
+                //这里应该都是网络层去获取的消息，现在在前端页面模拟一下!!!
+                game.net.onMsg_EnterLobby(data);
+            }
+            function onMsg_EnterRoomSuccess(data){
+                //这里简要了，其实这里只是进入房间，进入房价后，还需要准备，等待其他玩家准备后，
+                //服务器发送游戏开始的msg,游戏才会开始
+                //但是，既然这么着急，那么开始吧！
+                console.warn("client start a new game-round!");
+                document.getElementById('btn_link').disabled = true;
+                document.getElementById('btn_start').disabled = true;
+                document.getElementById('btn_quit').disabled = true;
+                document.getElementById('btn_ready').disabled = false;
+
+                //
+                game.net.onMsg_EnterRoomSuccess(data);
+
+            }
+            function onMsg_LeaveRoomSuccess(data){
+                game.net.onMsg_LeaveRoomSuccess(data);
+
+            }
+            function onMsg_CreateRoomSuccess(data){
+                game.net.onMsg_CreateRoomSuccess(data);
+
+            }
+            function onMsg_ReEnterRoom(data){
+                game.net.onMsg_ReEnterRoom(data);
+
+            }
+            function onMsg_SetReadySuccess(data){
+                document.getElementById('btn_ready').disabled = true;
+                //准备开始游戏，这里伪造一些数据，这里的数据会被socket.io转换为json了
+                data = {
+                    wm: {},
+                    player : {uid:"wwh",nickname:"温伟航"},
+                    overlords : [
+                        {uid:"wwh",nickname:"温伟航",territories:[{x:1,y:4,dn:8,dv:1}]},
+                        {uid:"pc_1",nickname:"电脑1",territories:[{x:4,y:0,dn:8,dv:1}]},
+                        {uid:"pc_2",nickname:"电脑2",territories:[{x:8,y:0,dn:8,dv:1}]}],
+                    turns : ["wwh","pc_1","pc_2"]
+                };
+                game.net.onMsg_SetReadySuccess(data);
+
+            }
+            function onMsg_QuitGameSuccess(data){
+                console.warn("client quit the game!");
+                document.getElementById('btn_link').disabled = false;
+                document.getElementById('btn_start').disabled = true;
+                document.getElementById('btn_quit').disabled = true;
+                document.getElementById('btn_ready').disabled = true;
+
+                //
+                game.net.onMsg_QuitGameSuccess(data);
+
+            }
+            function onMsg_PlayerMsg(data){
+                game.net.onMsg_PlayerMsg(data);
+
+            }
+            function onMsg_GetPlayerInfo(data){
+                game.net.onMsg_GetPlayerInfo(data);
+
+            }
+        </script>
+
+    </body>
 </html>
