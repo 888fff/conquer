@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+
+</body>
+<script>
+    var arr = [1,2,3,4,5];
+    function cut(a) {
+        a.splice(1, a.length);
+    }
+    function g() {
+        var a = [6,6,6];
+        return a;
+    }
+    var brr = g();
+    cut(brr);
+    console.log(brr.length);
+</script>
+</html>
