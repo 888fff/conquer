@@ -9,6 +9,7 @@ var game = {
     },
 
     launch_game : false,
+    lose_game : false,
 
 
     // Run on page load.
@@ -42,7 +43,8 @@ var game = {
         me.state.set(me.state.MENU,     new game.IntroScreen());
         me.state.set(me.state.READY,    new game.ReadyScreen());
         me.state.set(me.state.PLAY,     new game.PlayScreen());
-        //me.state.set(me.state.SCORE, new game.ScoreScreen());
+        me.state.set(me.state.GAMEOVER, new game.GameOverScreen());
+
 
 
         me.pool.register("tile", game.Territory);

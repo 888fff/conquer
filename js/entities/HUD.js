@@ -25,12 +25,18 @@ game.HUD.Container = me.Container.extend({
 
         this.up_A_btn = new game.HUD.Button(
             0,30,"upgrade A", function () {
-                console.log("upgrade A");
+                if(me.state.current().gameManager.isMainOverlordTurn()){
+                    var selector = me.state.current().selector;
+                    me.state.current().gameManager.getMainOverlord().doAction_UpgradeDiscNum(selector.lastSelect.hexCoord);
+                }
             }
         );
         this.up_B_btn = new game.HUD.Button(
             120,30,"upgrade B",function () {
-                console.log("upgrade B");
+                if(me.state.current().gameManager.isMainOverlordTurn()){
+                    var selector = me.state.current().selector;
+                    me.state.current().gameManager.getMainOverlord().doAction_UpgradeDiscValue(selector.lastSelect.hexCoord);
+                }
             }
         );
         this.attack_btn = new game.HUD.Button(
@@ -41,7 +47,9 @@ game.HUD.Container = me.Container.extend({
         );
         this.pass_btn = new game.HUD.Button(
             360,30,"pass",function () {
-                console.log("pass");
+                if(me.state.current().gameManager.isMainOverlordTurn()){
+                    me.state.current().gameManager.getMainOverlord().doAction_Pass();
+                }
             }
         );
 
@@ -54,11 +62,19 @@ game.HUD.Container = me.Container.extend({
             }
         );
 
+        this.lose_btn = new game.HUD.Button(
+            120,90,"FUNC LOSE", function () {
+                me.state.current().gameManager.getMainOverlord().doAction_LoseGame();
+            }
+        );
+
         this.addChild(this.up_A_btn);
         this.addChild(this.up_B_btn);
         this.addChild(this.attack_btn);
         this.addChild(this.pass_btn);
         this.addChild(this.func_btn);
+        this.addChild(this.lose_btn);
+
 
 
         this.updateChildBounds();
@@ -69,16 +85,24 @@ game.HUD.Container = me.Container.extend({
         this.hideTerritoryBtn();
     },
 
+    setInfoText : function(text){
+        this.infoBar.setText(text);
+    },
+
     showTerritoryBtn : function () {
-        this.up_A_btn.show();
-        this.up_B_btn.show();
-        this.attack_btn.show();
+        if(me.state.current().gameManager.isMainOverlordTurn()){
+            this.up_A_btn.show();
+            this.up_B_btn.show();
+            this.attack_btn.show();
+            this.pass_btn.show();
+        }
     },
 
     hideTerritoryBtn :function(){
         this.up_A_btn.hide();
         this.up_B_btn.hide();
         this.attack_btn.hide();
+        this.pass_btn.hide();
     }
 });
 
@@ -173,8 +197,17 @@ game.HUD.Info_Label = me.Renderable.extend({
     /**
      * update function
      */
-    update : function () {
-
+    update : function (dt) {
+        var mgr = me.state.current().gameManager;
+        var lord = mgr.getCurTurnOverlord();
+        if(lord != null){
+            if(mgr.isMainOverlordTurn()){
+                this.setText('玩家' + lord.nickname +'的回合，剩余AP['+ lord.ap +']');
+            }
+            else{
+                this.setText('等待玩家' + lord.nickname +'的回合...');
+            }
+        }
     },
 
     setText : function (text) {
@@ -184,7 +217,6 @@ game.HUD.Info_Label = me.Renderable.extend({
         this.textHeight = ret.height;
 
     },
-
     /**
      * draw the score
      */
@@ -195,6 +227,8 @@ game.HUD.Info_Label = me.Renderable.extend({
                 this.pos.x + this.textWidth / 2,
                 this.pos.y + this.textHeight / 2
         );
-    }
+    },
+
+
 
 });

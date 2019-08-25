@@ -39,6 +39,14 @@ DataCacheLayer.prototype.parseWorldMap = function (data) {
     //this.worldMap.createWorldMapFromData(data);
 };
 
+DataCacheLayer.prototype.parsePassData = function (data) {
+    this.gameManager.overlordEndTurn(data.uid,data.rd);
+};
+
+DataCacheLayer.prototype.parseLoseGameData = function(data){
+    this.gameManager.overlordLoseGame(data.uid,data.rd);
+};
+
 DataCacheLayer.prototype.parseOverlords = function(data){
     var self = this;
     var overlordsData = data.slice(0);//复制一份
@@ -59,6 +67,57 @@ DataCacheLayer.prototype.parseOverlords = function(data){
 DataCacheLayer.prototype.parseTurnsOrder = function (data) {
      this.gameManager.setTurnQueen(data);
 };
+DataCacheLayer.prototype.parseMode = function (data) {
+    //Single mode
+    var self = this;
+    if(data === 1){
+        this.gameManager.turnQueen.forEach(function (turn) {
+            if(turn.getLordID() !== self.player_uid){
+                turn.implantAI();
+            }
+        })
+    }
+};
+DataCacheLayer.prototype.launchGame = function () {
+    this.gameManager.start();
+};
+
+DataCacheLayer.prototype.parseStartTurn = function(data){
+    this.gameManager.overlordStartTurn(data.uid);
+};
+
+DataCacheLayer.prototype.parseUpgradeDiscNum = function(data){
+    if(data.ret){
+        var uid = data.uid;
+        var tid = data.tid;
+        var disc_num = data.dn;
+        var territory = this.worldMap.getTerritory(tid);
+        if(uid === territory.overlord.uid){
+            territory.upgradeDiceNum(disc_num);
+        }
+        var ol = this.gameManager.getOverlord(data.uid);
+        ol.setAP(data.ap);
+    }
+    else{
+        console.log(data.uid +" UpgradeDiscNum ret:" + data.ret);
+    }
+};
+DataCacheLayer.prototype.parseUpgradeDiscValue = function(data){
+    if(data.ret){
+        var uid = data.uid;
+        var tid = data.tid;
+        var disc_value = data.dv;
+        var territory = this.worldMap.getTerritory(tid);
+        if(uid === territory.overlord.uid){
+            territory.upgradeDiceValue(disc_value);
+        }
+        var ol = this.gameManager.getOverlord(data.uid);
+        ol.setAP(data.ap);
+    }
+    else{
+        console.log(data.uid +" UpgradeDiscNum ret:" + data.ret);
+    }
+};
 
 DataCacheLayer.prototype.updateOverlordsTerritory = function () {
     this.gameManager.updateAllOverlordsTerritory();
@@ -74,7 +133,8 @@ DataCacheLayer.prototype.parseAttackResult = function(data){
     //TODO data.f_atk VS data.t_atk
     this.gameManager.vfxBubblingText(data.f_tid,data.f_atk.toString());
     this.gameManager.vfxBubblingText(data.t_tid,data.t_atk.toString());
-
+    var ol = this.gameManager.getOverlord(data.f_uid);
+    ol.setAP(data.ap);
     //
     if(data.ret){
         //重新设置区域归属

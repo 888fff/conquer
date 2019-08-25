@@ -76,3 +76,57 @@ game.BunkerRenderable = me.Renderable.extend({
         return true;
     }
 });
+
+
+/*Game Over Stage is here*/
+game.GameOverScreen = me.Stage.extend({
+    init: function() {
+        this._super(me.Stage, 'init', []);
+        this.finished = false;
+    },
+
+    onResetEvent: function() {
+
+        this.bunker = new game.GameOverRenderable();
+        me.game.world.addChild( this.bunker );
+
+        this.subscription = me.event.subscribe( me.event.KEYDOWN, this.keyHandler.bind(this));
+        this.finished = false;
+    },
+
+    keyHandler: function (action, keyCode, edge) {
+        if(keyCode === me.input.KEY.ENTER && !this.finished) {
+            this.finished = true;
+            me.state.change(me.state.READY);
+        }
+    },
+
+    onDestroyEvent: function() {
+        me.event.unsubscribe(this.subscription);
+    }
+});
+
+game.GameOverRenderable = me.Renderable.extend({
+    init: function() {
+        this._super(me.Renderable, "init",[0, 0,
+            me.game.viewport.getWidth(),
+            me.game.viewport.getHeight()]);
+        this.counter = 0;
+        this.floating = true;
+        this.anchorPoint.set(0,0);
+        this.bg = new me.ColorLayer("background", "#222222");
+        this.bg_size = new me.Rect(0,0,960,640);
+        this.text = new me.Text(0,0,{font:"kenpixel", size:26,textAlign:"center",fillStyle:"#eec720"});
+        if(game.lose_game){
+            this.label = "抱歉，你输掉了游戏...\n\n(按回车返回)";
+        }else{
+            this.label = "恭喜，你成为了最终的霸主！\n\n(按回车返回)";
+        }
+        var ret = this.text.measureText(me.video.renderer, this.label);
+        this.textHeight = ret.height;
+    },
+    draw: function(renderer) {
+        this.bg.draw(renderer,this.bg_size);
+        this.text.draw (renderer,this.label,this.width / 2,this.height / 2 - this.textHeight);
+    }
+});

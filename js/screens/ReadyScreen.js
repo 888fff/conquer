@@ -65,4 +65,3 @@ game.ReadyRenderable = me.Renderable.extend({
         return true;
     }
 });
-
