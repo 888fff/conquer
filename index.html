@@ -39,6 +39,8 @@
         <!-- melonJS Library -->
         <!-- build:js js/app.min.js -->
         <script type="text/javascript" src="lib/melonjs.js"></script>
+        <script type="text/javascript" src="lib/socket.io.js"></script>
+
 
         <!-- Plugin(s) -->
         <script type="text/javascript" src="lib/plugins/debug/debugPanel.js"></script>
@@ -162,7 +164,7 @@
                     overlords : [
                         {uid:"wwh",nickname:"温伟航",territories:[{x:1,y:4,dn:8,dv:1}]},
                         {uid:"pc_1",nickname:"电脑1",territories:[{x:4,y:0,dn:8,dv:1}]},
-                        {uid:"pc_2",nickname:"电脑2",territories:[{x:8,y:0,dn:8,dv:1}]}],
+                        {uid:"pc_2",nickname:"电脑2",territories:[{x:0,y:0,dn:8,dv:1}]}],
                     turns : ["wwh","pc_1","pc_2"]
                 };
                 game.net.onMsg_SetReadySuccess(data);

@@ -24,7 +24,7 @@ game.HUD.Container = me.Container.extend({
         this.name = "HUD";
 
         this.up_A_btn = new game.HUD.Button(
-            0,30,"upgrade A", function () {
+            0,30,"升级♞\n(花费1AP)", function () {
                 if(me.state.current().gameManager.isMainOverlordTurn()){
                     var selector = me.state.current().selector;
                     me.state.current().gameManager.getMainOverlord().doAction_UpgradeDiscNum(selector.lastSelect.hexCoord);
@@ -32,7 +32,7 @@ game.HUD.Container = me.Container.extend({
             }
         );
         this.up_B_btn = new game.HUD.Button(
-            120,30,"upgrade B",function () {
+            120,30,"升级➹\n(花费2AP)",function () {
                 if(me.state.current().gameManager.isMainOverlordTurn()){
                     var selector = me.state.current().selector;
                     me.state.current().gameManager.getMainOverlord().doAction_UpgradeDiscValue(selector.lastSelect.hexCoord);
@@ -40,13 +40,13 @@ game.HUD.Container = me.Container.extend({
             }
         );
         this.attack_btn = new game.HUD.Button(
-            240,30,"attack",function () {
+            240,30,"攻击\n(花费1AP)",function () {
                 me.state.current().selector.attackState_On();
                 self.hideTerritoryBtn();
             }
         );
         this.pass_btn = new game.HUD.Button(
-            360,30,"pass",function () {
+            360,30,"结束回合\n(花费0AP)",function () {
                 if(me.state.current().gameManager.isMainOverlordTurn()){
                     me.state.current().gameManager.getMainOverlord().doAction_Pass();
                 }
@@ -54,7 +54,7 @@ game.HUD.Container = me.Container.extend({
         );
 
         this.func_btn = new game.HUD.Button(
-            0,90,"FUNC A", function () {
+            0,90,"FUNC A\n(测试)", function () {
                 var worldLayer = me.game.world.getChildByName("WorldMap")[0];
                 var content = worldLayer.serialize();
                 var blob = new Blob([content], {type: "text/plain;charset=utf-8"});
@@ -63,7 +63,7 @@ game.HUD.Container = me.Container.extend({
         );
 
         this.lose_btn = new game.HUD.Button(
-            120,90,"FUNC LOSE", function () {
+            120,90,"FUNC LOSE\n(测试)", function () {
                 me.state.current().gameManager.getMainOverlord().doAction_LoseGame();
             }
         );
@@ -122,7 +122,7 @@ game.HUD.Button = me.GUI_Object.extend({
         //
         this.font = new me.Text(0, 0 ,{
             font: "kenpixel",
-            size: 12,
+            size: 13,
             fillStyle: "black",
             textAlign: "center",
             textBaseline: "middle"
@@ -134,6 +134,15 @@ game.HUD.Button = me.GUI_Object.extend({
 
         this.isHide = false;
 
+        this.setText(this.label);
+
+    },
+
+    setText : function (text) {
+        this.label = text;
+        var ret = this.font.measureText(me.video.renderer, this.label);
+        this.textWidth = ret.width;
+        this.textHeight = ret.height;
 
     },
 
@@ -163,7 +172,7 @@ game.HUD.Button = me.GUI_Object.extend({
         this.font.draw(renderer,
             this.label,
                 this.pos.x + this.width / 2,
-                this.pos.y + this.height / 2
+                this.pos.y + this.textHeight/2
         );
     }
 });

@@ -5,8 +5,8 @@ game.World = me.Container.extend({
             this.ROWS * this.HEX_SIZE - 32
         ]);
         this.HEX_SIZE = 64;
-        this.COLS = 9;
-        this.ROWS = 5;
+        this.COLS = 7;
+        this.ROWS = 7;
         this.name = "WorldMap";
         this.outerRadius = this.HEX_SIZE * 0.5;
         this.innerRadius = this.outerRadius * 0.866025404;

@@ -15,10 +15,10 @@ var game = {
     // Run on page load.
     "onload" : function () {
         // Initialize the video.
-        if (!me.video.init(960, 640, {
+        if (!me.video.init(640, 800, {
             wrapper : "screen",
             scale : "auto",
-            scaleMethod : "fill-max",//"flex-width",
+            scaleMethod : "fit",//"flex-width",
             doubleBuffering : true,
             renderer:me.video.CANVAS
         })) {
