@@ -12,9 +12,17 @@ game.IntroScreen = me.Stage.extend({
         this.bunker = new game.BunkerRenderable();
         me.game.world.addChild( this.bunker );
 
+        me.input.registerPointerEvent("pointerdown", me.game.viewport, function (event) {
+            me.event.publish("pointerdown", [event]);
+        }, false);
+
         this.subscription = me.event.subscribe( me.event.KEYDOWN, this.keyHandler.bind(this));
+        this.pointer_subscription = me.event.subscribe( "pointerdown", this.pointerHandler.bind(this));
+
         //me.audio.play("bunkerlogo");
         this.finished = false;
+        //
+        game.dataCache.createMelonJSComponent();
     },
 
     keyHandler: function (action, keyCode, edge) {
@@ -24,10 +32,20 @@ game.IntroScreen = me.Stage.extend({
             this.finished = true;
         }
     },
+    pointerHandler : function(event){
+        if(!this.finished) {
+            this.finished = true;
+        }
+    },
 
     onDestroyEvent: function() {
         //me.audio.stopTrack();
+        me.input.releasePointerEvent("pointerdown", me.game.viewport);
         me.event.unsubscribe(this.subscription);
+        me.event.unsubscribe(this.pointer_subscription);
+        me.game.world.removeChild( this.bunker );
+
+
     }
 });
 
@@ -41,8 +59,8 @@ game.BunkerRenderable = me.Renderable.extend({
         this.floating = true;
         this.anchorPoint.set(0,0);
 
-        var cx = this.width / 2;
-        var cy = this.height / 2;
+        let cx = this.width / 2;
+        let cy = this.height / 2;
         this.bg = new me.ColorLayer("background", "#222222");
         this.bg_size = new me.Rect(0,0,960,640);
         /*
@@ -54,9 +72,9 @@ game.BunkerRenderable = me.Renderable.extend({
             framewidth : 400,
             frameheight : 225
         });
-        this.bunker_logo.addAnimation("idle",[{name:0,delay:1500}]);
+        this.alwaysUpdate= true;
         this.bunker_logo.addAnimation("flash",[1,2]);
-        this.bunker_logo.setCurrentAnimation("idle", "flash");
+        this.bunker_logo.setCurrentAnimation("flash");
     },
     draw: function(renderer) {
         this.bg.draw(renderer,this.bg_size);
@@ -64,12 +82,17 @@ game.BunkerRenderable = me.Renderable.extend({
     },
 
     update: function( dt ) {
+
         this.bunker_logo.update(dt);
         //
-        if ( this.counter < 350 ) {
+        if ( this.counter < 100 ) {
             this.counter++;
+            if(this.counter === 150){
+                me.state.current().finished = true;
+            }
         }
-        else if(me.state.current().finished && !this.exiting) {
+
+        if(me.state.current().finished && !this.exiting) {
             this.exiting = true;
             me.state.change(me.state.READY);
         }
@@ -103,6 +126,8 @@ game.GameOverScreen = me.Stage.extend({
 
     onDestroyEvent: function() {
         me.event.unsubscribe(this.subscription);
+        me.game.world.removeChild( this.bunker );
+
     }
 });
 
@@ -122,7 +147,7 @@ game.GameOverRenderable = me.Renderable.extend({
         }else{
             this.label = "恭喜，你成为了最终的霸主！\n\n(按回车返回)";
         }
-        var ret = this.text.measureText(me.video.renderer, this.label);
+        let ret = this.text.measureText(me.video.renderer, this.label);
         this.textHeight = ret.height;
     },
     draw: function(renderer) {

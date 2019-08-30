@@ -17,12 +17,13 @@
     <body>
         <br>
         <div>
-            <button id = "btn_link" onclick= "link2Server()">连接服务器</button>
-            <button id = "btn_start" onclick= "startConquer()" disabled="disabled">请求开始游戏</button>
-            <button id = "btn_ready" onclick= "readyConquer()" disabled="disabled">准备</button>
-            <button id = "btn_quit" onclick= "quitConquer()" disabled="disabled">退出游戏</button>
-            IP: <input id="ip_input" type="text" name="ip" value="127.0.0.1"/>
-            Name: <input id="user_input" type="text" name="user" value="wwh"/>
+<!--            <button id = "btn_link" onclick= "link2Server()">连接服务器</button>-->
+<!--            <button id = "btn_start" onclick= "startConquer()" disabled="disabled">请求开始游戏</button>-->
+<!--            <button id = "btn_ready" onclick= "readyConquer()" disabled="disabled">准备</button>-->
+<!--            <button id = "btn_quit" onclick= "quitConquer()" disabled="disabled">退出游戏</button>-->
+            UserID: <input id="user_id" type="text" name="user" value="wwh" style="width:100px"/>
+<!--            UserID: <input id="user_id" type="text" name="user" placeholder="输入内测ID" style="width:100px"/>-->
+            <button id = "btn_start_on" onclick= "start_on()">启动游戏</button>
 
         </div>
         <hr>
@@ -38,12 +39,13 @@
 
         <!-- melonJS Library -->
         <!-- build:js js/app.min.js -->
-        <script type="text/javascript" src="lib/melonjs.js"></script>
+<!--        <script type="text/javascript" src="lib/melonjs.js"></script>-->
+        <script type="text/javascript" src="lib/melonjs.min.js"></script>
         <script type="text/javascript" src="lib/socket.io.js"></script>
 
 
         <!-- Plugin(s) -->
-        <script type="text/javascript" src="lib/plugins/debug/debugPanel.js"></script>
+<!--        <script type="text/javascript" src="lib/plugins/debug/debugPanel.js"></script>-->
 
         <!-- Game Scripts -->
         <script type="text/javascript" src="js/game.js"></script>
@@ -77,9 +79,20 @@
 
         <!-- Bootstrap -->
         <script type="text/javascript">
+            let windowsReady = false;
             me.device.onReady(function onReady() {
-                game.onload();
+                windowsReady = true;
             });
+
+            function start_on() {
+                if (windowsReady) {
+                    let uid = document.getElementById('user_id').value;
+                    document.getElementById('btn_start_on').disabled = true;
+                    document.getElementById('user_id').disabled = true;
+                    game.onload(uid);
+                }
+            }
+            //下载文件
             function downFile(blob, fileName) {
                 if (window.navigator.msSaveOrOpenBlob) {
                     navigator.msSaveBlob(blob, fileName);
@@ -90,104 +103,6 @@
                     link.click();
                     window.URL.revokeObjectURL(link.href);
                 }
-            }
-            //首先链接网关服务器，成功之后，服务器会发送一个玩家ID和token，玩家拿这个id和token再次连接服务器，则进入大厅
-            //但是目前的流程不科学，先按照目前的来吧，之后再调整
-            //目前的流程是，根据IP，链接服务器，然后服务器会发送客户端一个欢迎信息，客户端拿到信息后开始登陆服务器
-            function link2Server( ){
-                var ip = document.getElementById('ip_input').value;
-                var user = document.getElementById('user_input').value;
-                console.log("request connecting to the server[" + ip + ']');
-                //模拟服务器发送一个进入lobby的消息
-                setTimeout(onMsg_EnterLobby,0);
-            }
-            //玩家向服务器申请一个新的棋局，然后等待玩家加入
-            function startConquer( ){
-                //
-                console.log("request a new game-round");
-                //模拟服务器发送一个请求棋局的消息
-                setTimeout(onMsg_EnterRoomSuccess,0);
-
-            }
-            //退出游戏
-            function quitConquer(){
-                console.log("request quit the game!");
-                //模拟服务器发送一个进入lobby的消息
-                setTimeout(onMsg_QuitGameSuccess,0);
-            }
-            function readyConquer() {
-                console.log("request set ready game!");
-                setTimeout(onMsg_SetReadySuccess,0);
-            }
-            //响应服务器的消息函数Room
-            function onMsg_EnterLobby(data){
-                console.warn("client get into the lobby");
-                document.getElementById('btn_link').disabled = true;
-                document.getElementById('btn_start').disabled = false;
-                document.getElementById('btn_quit').disabled = false;
-                //这里应该都是网络层去获取的消息，现在在前端页面模拟一下!!!
-                game.net.onMsg_EnterLobby(data);
-            }
-            function onMsg_EnterRoomSuccess(data){
-                //这里简要了，其实这里只是进入房间，进入房价后，还需要准备，等待其他玩家准备后，
-                //服务器发送游戏开始的msg,游戏才会开始
-                //但是，既然这么着急，那么开始吧！
-                console.warn("client start a new game-round!");
-                document.getElementById('btn_link').disabled = true;
-                document.getElementById('btn_start').disabled = true;
-                document.getElementById('btn_quit').disabled = true;
-                document.getElementById('btn_ready').disabled = false;
-
-                //
-                game.net.onMsg_EnterRoomSuccess(data);
-
-            }
-            function onMsg_LeaveRoomSuccess(data){
-                game.net.onMsg_LeaveRoomSuccess(data);
-
-            }
-            function onMsg_CreateRoomSuccess(data){
-                game.net.onMsg_CreateRoomSuccess(data);
-
-            }
-            function onMsg_ReEnterRoom(data){
-                game.net.onMsg_ReEnterRoom(data);
-
-            }
-            function onMsg_SetReadySuccess(data){
-                document.getElementById('btn_ready').disabled = true;
-                //准备开始游戏，这里伪造一些数据，这里的数据会被socket.io转换为json了
-                data = {
-                    wm: {},
-                    mode : 1,
-                    player : {uid:"wwh",nickname:"温伟航"},
-                    overlords : [
-                        {uid:"wwh",nickname:"温伟航",territories:[{x:1,y:4,dn:8,dv:1}]},
-                        {uid:"pc_1",nickname:"电脑1",territories:[{x:4,y:0,dn:8,dv:1}]},
-                        {uid:"pc_2",nickname:"电脑2",territories:[{x:0,y:0,dn:8,dv:1}]}],
-                    turns : ["wwh","pc_1","pc_2"]
-                };
-                game.net.onMsg_SetReadySuccess(data);
-
-            }
-            function onMsg_QuitGameSuccess(data){
-                console.warn("client quit the game!");
-                document.getElementById('btn_link').disabled = false;
-                document.getElementById('btn_start').disabled = true;
-                document.getElementById('btn_quit').disabled = true;
-                document.getElementById('btn_ready').disabled = true;
-
-                //
-                game.net.onMsg_QuitGameSuccess(data);
-
-            }
-            function onMsg_PlayerMsg(data){
-                game.net.onMsg_PlayerMsg(data);
-
-            }
-            function onMsg_GetPlayerInfo(data){
-                game.net.onMsg_GetPlayerInfo(data);
-
             }
         </script>
 

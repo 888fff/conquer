@@ -1,8 +1,7 @@
 game.World = me.Container.extend({
     init : function () {
         this._super(me.Container, "init", [64, 64,
-            this.COLS * this.HEX_SIZE - 32,
-            this.ROWS * this.HEX_SIZE - 32
+            1, 1
         ]);
         this.HEX_SIZE = 64;
         this.COLS = 7;
@@ -14,12 +13,10 @@ game.World = me.Container.extend({
         this.gridSize_x = 1.5 * sideLength;
         this.gridSize_y = 1.732 * sideLength;
         //
-        this.territoriesHexCoords = null;
+        this.created = false;
     },
 
     createWorldMap : function () {
-
-        this.territoriesHexCoords = [];
 
         for (var i = 0; i < this.ROWS; i++) {
             for (var j = 0; j < this.COLS; j++) {
@@ -28,30 +25,43 @@ game.World = me.Container.extend({
                 var t = me.pool.pull("tile", x, y);
                 this.addChild(t);
                 t.hexCoord = this.worldPosToHexCell(t.pos);
-                this.territoriesHexCoords.push(t.hexCoord);
             }
         }
         //
         this.linkToNeighbour();
 
         this.updateChildBounds();
+
+        this.created = true;
     },
 
     createWorldMapFromData : function (data) {
-        var self = this;
-        var worldData = JSON.parse(data);
+        if(!data) return;
+        console.log("createWorldMapFromData");
+        let self = this;
+        let worldData = data.map;
+        let worldCfg = data.cfg;
+
+        this.HEX_SIZE = worldCfg.s;
+        this.COLS = worldCfg.c;
+        this.ROWS = worldCfg.r;
+
         worldData.forEach(function(tData){
             var pos = self.hexCellToWorldPos(tData.hc);
             var t = me.pool.pull("tile", pos.x, pos.y);
             t.hexCoord = tData.hc;
             t.neighbour = tData.nb;
+            t.diceNum = tData.dn;
+            t.diceValueMin = tData.dv;
             self.addChild(t);
         });
+
+        this.updateChildBounds();
+
+        this.created = true;
     },
 
     onActivateEvent : function () {
-        var self = this;
-        //me.input.registerPointerEvent("pointerdown", this, this.onSelect.bind(this));
 
     },
     
@@ -109,7 +119,7 @@ game.World = me.Container.extend({
     getTerritory : function (hexCoord) {
         var t = null;
         this.forEach(function (child) {
-            if(child.hexCoord && child.hexCoord.x == hexCoord.x && child.hexCoord.y == hexCoord.y){
+            if(child.hexCoord && child.hexCoord.x === hexCoord.x && child.hexCoord.y === hexCoord.y){
                 t = child;
             }
         });
@@ -136,13 +146,13 @@ game.World = me.Container.extend({
                 var n = neighbour[i];
                 //不合法，将其删除
                 if(n.x<0 || n.x > self.COLS - 1){
-                    neighbour.splice(i,2);
+                    neighbour.splice(i,1);
                     i--;
                     continue;
                 }
                 var range = self.getRangeYAxis(n.x);
                 if(n.y < range.min || n.y > range.max){
-                    neighbour.splice(i,2);
+                    neighbour.splice(i,1);
                     i--;
                 }
             }
@@ -156,18 +166,6 @@ game.World = me.Container.extend({
         this.forEach(function (child) {
             self.getNeighbour(child.hexCoord,child.neighbour);
         })
-
     },
-    //
-    serialize : function(){
-        var content = [];
-        this.forEach(function (territory) {
-            content.push({
-                hc : territory.hexCoord,
-                nb : territory.neighbour
-            });
-        });
-        return JSON.stringify(content);
-    }
 });
 

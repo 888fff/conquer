@@ -81,8 +81,15 @@ game.TSelect = me.Renderable.extend({
             console.log("HexCellPos (" + hexCoord.x.toFixed(2) + ',' + hexCoord.y.toFixed(2) + ')');
             */
             var territory = this.worldLayer.getTerritory(hexCoord);
-            if(this.state == 0){
-                if(territory && territory.overlord && this.gameManager.isMainOverlord(territory.overlord)){
+            if(territory){
+                console.log("Territory ID:(" + territory.hexCoord.x + ',' + territory.hexCoord.y + ')');
+            }
+
+            if(this.state === 0){
+                if(territory
+                    && territory.overlord
+                    && this.gameManager.isMainOverlord(territory.overlord.uid)
+                    && this.gameManager.isMainOverlordTurn()){
                     this.lastSelect = territory;
                     this.lastSelectHexShape.pos.set(
                             this.lastSelect.pos.x + this.worldLayer.pos.x,
@@ -92,11 +99,9 @@ game.TSelect = me.Renderable.extend({
                     this.lastSelect = null;
                     this.ui.hideTerritoryBtn();
                 }
-            }else if(this.state == 1){
+            }else if(this.state === 1){
                 if( territory
-                    && false == this.gameManager.isMainOverlord(territory.overlord)
-                    && this.lastSelect.isNeighbour(territory.hexCoord)){
-
+                    && (!territory.overlord || !this.gameManager.isMainOverlord(territory.overlord.uid))){
                     this.lastSelect.overlord.doAction_Attack(this.lastSelect.hexCoord,territory.hexCoord);
                     this.lastSelect = null;
                 }else{
@@ -126,7 +131,6 @@ game.TSelect = me.Renderable.extend({
             this.hexShape.pos.set(t.pos.x + this.worldLayer.pos.x, t.pos.y + this.worldLayer.pos.y);
 
             this.currentHexCell = t;
-            console.log("Territory ID:(" + t.hexCoord.x + ',' + t.hexCoord.y + ')');
         }
     },
     viewportMove : function (pos) {

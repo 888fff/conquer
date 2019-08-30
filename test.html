@@ -2,22 +2,277 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title></title>
+    <title>测试测试测试</title>
 </head>
 <body>
-
+<h4 id="client">这里是玩家登陆信息</h4>
+    <span>
+        <button onclick="login('wwh')">WWH登陆</button>
+        <button onclick="login('xly')">XLY登陆</button>
+    </span>
+<br><br>
+<button onclick="start_game()">开始游戏</button>
+<button onclick="set_ready()">准备</button>
+<button onclick="set_unready()">取消准备</button>
+<button onclick="leave_room()">返回大厅</button>
+<br><br>
+<label for="msg_input">消息:
+    <input id="msg_input" type="text" name="user" value=""/>
+</label>
+<button onclick="send_msg()">发送</button>
+<hr>
+<br>
+<div>
+    <input id="dn_x" type="number" name="user" value=""/>
+    <input id="dn_y" type="number" name="user" value=""/>
+    <button onclick="game_upgrade_dn()">升DN</button>
+</div>
+<div>
+    <input id="dv_x" type="number" name="user" value=""/>
+    <input id="dv_y" type="number" name="user" value=""/>
+    <button onclick="game_upgrade_dv()">升DV</button>
+</div>
+<div>
+    <input id="atk_fx" type="number" name="user" value="" style="width:100px"/>
+    <input id="atk_fy" type="number" name="user" value="" style="width:100px"/>
+    TO
+    <input id="atk_tx" type="number" name="user" value="" style="width:100px"/>
+    <input id="atk_ty" type="number" name="user" value="" style="width:100px"/>
+    <button onclick="game_attack()">攻击</button>
+</div>
+<div>
+    <button onclick="game_pass()">PASS</button>
+</div>
 </body>
+<script src="lib/socket.io.js"></script>
 <script>
-    var arr = [1,2,3,4,5];
-    function cut(a) {
-        a.splice(1, a.length);
+    var MsgType = {
+        C_ENTER_ROOM: 'C_ENTER_ROOM',
+        C_LEAVE_ROOM: 'C_LEAVE_ROOM',
+        C_SET_READY: 'C_SET_READY',
+        C_GET_INFO: 'C_GET_INFO',
+        C_MSG: 'C_MSG',
+    };
+    var client = {uid: "", nickname: "", ready: false};
+    var socket = null;
+
+    function login(uid) {
+        if(!socket){
+            console.log(uid + "尝试登陆");
+            socket = io('127.0.0.1:8000?token=conquer&user=' + uid);
+            if (socket) {
+                socket.uid = uid;
+                setTimeout(config(),10);
+            }
+        }
     }
-    function g() {
-        var a = [6,6,6];
-        return a;
+
+    function start_game() {
+        socket.emit(MsgType.C_ENTER_ROOM, {});
     }
-    var brr = g();
-    cut(brr);
-    console.log(brr.length);
+
+    function set_ready() {
+        socket.emit(MsgType.C_SET_READY, {ready: true});
+    }
+
+    function set_unready() {
+        socket.emit(MsgType.C_SET_READY, {ready: false});
+    }
+
+    function leave_room() {
+        socket.emit(MsgType.C_LEAVE_ROOM, {});
+    }
+
+    function send_msg() {
+        var msg = document.getElementById('user_input').value;
+        socket.emit(MsgType.C_MSG, {msg: msg});
+    }
+
+    //--------------Game--------------
+    const GameMsgType = {
+        C_ACTION: "C_ACTION",
+        C_REVIEW: "C_REVIEW",
+        C_AUTO: "C_AUTO",
+        ///
+        S_BC_ACTION: "S_BC_ACTION",
+        S_ACTION: "S_ACTION",
+        S_ASSIGN: "S_ASSIGN",
+        S_REVIEW: "S_REVIEW",
+        S_GAMEOVER: "S_GAMEOVER",
+        S_ERR: "S_ERR"
+    };
+    const Act = {
+        INVALID: 0,
+        UPGRADE_DN: 1,
+        UPGRADE_DV: 2,
+        ATTACK: 4,
+        PASS: 8,
+        TURN: 256
+    };
+    /*d.uid, d.act, d.tid, d.extra*/
+    function game_upgrade_dn() {
+        let x = parseInt(document.getElementById('dn_x').value);
+        let y = parseInt(document.getElementById('dn_y').value);
+
+        socket.emit(GameMsgType.C_ACTION,{
+            uid : socket.uid,
+            act : Act.UPGRADE_DN,
+            tid: {x:x,y:y},
+            extra:{}}
+        );
+    }
+
+    function game_upgrade_dv() {
+        let x = parseInt(document.getElementById('dv_x').value);
+        let y = parseInt(document.getElementById('dv_y').value);
+        socket.emit(GameMsgType.C_ACTION,{
+            uid : socket.uid,
+            act : Act.UPGRADE_DV,
+            tid:{x:x,y:y},
+            extra:{}}
+        );
+    }
+
+    function game_attack() {
+        let fx = parseInt(document.getElementById('atk_fx').value);
+        let fy = parseInt(document.getElementById('atk_fy').value);
+        let tx = parseInt(document.getElementById('atk_tx').value);
+        let ty = parseInt(document.getElementById('atk_ty').value);
+        socket.emit(GameMsgType.C_ACTION,{
+            uid : socket.uid,
+            act : Act.ATTACK,
+            tid:{x:fx,y:fy},
+            extra:{x:tx,y:ty}}
+        );
+    }
+
+    function game_pass() {
+        socket.emit(GameMsgType.C_ACTION,{
+            uid : socket.uid,
+            act : Act.PASS,
+            tid:{},
+            extra:{}}
+        );
+
+    }
+
+    function config() {
+
+        socket.on(GameMsgType.S_BC_ACTION, function (data) {
+            console.warn(GameMsgType.S_BC_ACTION + '[' + JSON.stringify(data) +']');
+        });
+        socket.on(GameMsgType.S_ACTION, function (data) {
+            console.warn(GameMsgType.S_ACTION + '[' + JSON.stringify(data) +']');
+        });
+        socket.on(GameMsgType.S_ASSIGN, function (data) {
+            console.warn(GameMsgType.S_ASSIGN + '[' + JSON.stringify(data) +']');
+            let uid = data.uid;
+            let world = data.world;
+            let overlords = data.extra.overlords;
+            overlords.forEach(function (overlord) {
+               if(overlord.uid === socket.uid){
+                   console.log("MY DATA:" + JSON.stringify(overlord));
+                   socket.ownTerritories = overlord.t;
+               }
+            });
+
+        });
+        socket.on(GameMsgType.S_REVIEW, function (data) {
+            console.warn(GameMsgType.S_REVIEW + '[' + JSON.stringify(data) +']');
+        });
+        socket.on(GameMsgType.S_GAMEOVER, function (data) {
+            console.warn(GameMsgType.S_GAMEOVER + '[' + JSON.stringify(data) +']');
+        });
+        socket.on(GameMsgType.S_ERR, function (data) {
+            console.warn(GameMsgType.S_ERR + '[' + JSON.stringify(data) +']');
+        });
+        socket.on('GAMELOGIC_START', function (data) {
+            console.warn('GAMELOGIC_START' + '[' + JSON.stringify(data) +']');
+        });
+
+        socket.on('connect', function () {
+            console.warn("connected");
+        });
+        socket.on('WELCOME', function (data) {
+            console.log(data);
+            socket.emit('login', {uid: socket.uid});
+        });
+        socket.on('disconnect', function () {
+            console.warn("disconnected");
+        });
+        //
+        socket.on('LOGIN_SUCCESS', function (data) {
+            console.warn("LOGIN_SUCCESS");
+
+        });
+        socket.on('LOGIN_ERROR', function (data) {
+            console.warn("LOGIN_ERROR[" + data.err + ']');
+
+        });
+        socket.on('STAY_LOBBY', function (data) {
+            console.warn("STAY_LOBBY[" + data.uid + '][' + data.nickname + '][' + data.state + ']');
+            let clientUI = document.getElementById('client');
+            clientUI.innerText = "ID:" + data.uid + ' 昵称:' + data.nickname;
+            client.uid = data.uid;
+            client.nickname = data.nickname;
+
+
+        });
+        socket.on('BC_STAY_LOBBY', function (data) {
+            console.warn("BC_STAY_LOBBY");
+
+        });
+        socket.on('BC_RE_ENTER_ROOM', function (data) {
+            console.warn("BC_RE_ENTER_ROOM");
+
+        });
+        socket.on('RE_ENTER_ROOM', function (data) {
+            console.warn("RE_ENTER_ROOM[" + data.rid + '][' + data.state + ']');
+            //
+            if(data.state === 'gaming'){
+                socket.emit(GameMsgType.C_REVIEW,{uid:socket.uid});
+            }
+        });
+        socket.on('BC_ENTER_ROOM', function (data) {
+            console.warn("BC_ENTER_ROOM");
+
+        });
+        socket.on('ENTER_ROOM_SUCCESS', function (data) {
+            console.warn("ENTER_ROOM_SUCCESS[" + data.rid + '][' + data.state + ']');
+
+        });
+        socket.on('ENTER_ROOM_ERROR', function (data) {
+            console.warn("ENTER_ROOM_ERROR[" + data.err + ']');
+        });
+        socket.on('BC_LEAVE_ROOM', function (data) {
+            console.warn("BC_LEAVE_ROOM");
+
+        });
+        socket.on('LEAVE_ROOM_SUCCESS', function (data) {
+            console.warn("LEAVE_ROOM_SUCCESS[" + data.state + ']');
+
+        });
+        socket.on('LEAVE_ROOM_ERROR', function (data) {
+            console.warn("LEAVE_ROOM_ERROR[" + data.err + ']');
+        });
+        socket.on('PLAYER_MSG', function (data) {
+            console.warn("PLAYER_MSG");
+
+        });
+        socket.on('SET_READY_SUCCESS', function (data) {
+            console.warn("SET_READY_SUCCESS[" + data.state + ']');
+            client.ready = true;
+
+        });
+        socket.on('SET_UNREADY_SUCCESS', function (data) {
+            console.warn("SET_UNREADY_SUCCESS[" + data.state + ']');
+            client.ready = false;
+
+        });
+        socket.on('SET_READY_ERROR', function (data) {
+            console.warn("SET_READY_ERROR[" + data.err + ']');
+        });
+    }
+
 </script>
 </html>

@@ -13,7 +13,7 @@ var game = {
 
 
     // Run on page load.
-    "onload" : function () {
+    "onload" : function (uid) {
         // Initialize the video.
         if (!me.video.init(640, 800, {
             wrapper : "screen",
@@ -25,7 +25,7 @@ var game = {
             alert("Your browser does not support HTML5 canvas.");
             return;
         }
-
+        this.dataCache.player_uid = uid;
         // Initialize the audio.
         me.audio.init("mp3,ogg");
         me.loader.preload(game.resources, this.loaded.bind(this));
@@ -51,6 +51,6 @@ var game = {
         // 设置转场效果
         //me.state.transition('fade', '#000', 1000);
         //开始！！
-        me.state.change(me.state.PLAY);
+        me.state.change(me.state.MENU);
     }
 };

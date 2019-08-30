@@ -33,12 +33,6 @@ game.Territory = me.Entity.extend({
         this.gainCoin = data.gc || this.gainCoin; //区域获得金币数
     },
 
-    Serialize : function(){
-        return {
-
-        };
-    },
-
     setFlagImage : function(idx){
         this.renderable.addAnimation("normal", [idx], 1);
         this.renderable.setCurrentAnimation("normal");
@@ -76,8 +70,8 @@ game.Territory = me.Entity.extend({
         else this.diceValueMin += 1;  
     },
     isNeighbour : function(hexCoord){
-        return !!this.neighbour.find(function(n){
-            return (n.x == hexCoord.x && n.y == hexCoord.y);
+        return -1 !== this.neighbour.find(function(n){
+            return (n.x === hexCoord.x && n.y === hexCoord.y);
         });
     }
 

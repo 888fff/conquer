@@ -6,49 +6,39 @@ game.GameManager = me.Renderable.extend({
         this.ready = false;
         //
         this._super(me.Renderable, 'init', [ 0, 0, 1, 1 ]);
-        this.world = me.game.world.getChildByName("WorldMap")[0];
-        this.vfx =   me.game.world.getChildByName("VFX")[0];
-        this.ui =   me.game.world.getChildByName("HUD")[0];
 
-
-        this.turnQueen = [];
-        this.curTurn = null;
+        this.curTurnUID = null;     //这里保存的是uid
         this.overlords = [];    //这里是装载overlords的实例容器
         //
         this.name = "GameMgr";
         this.round = 0;
+    },
 
+    update : function(){
+        if(this.ready){
+            //this.refreshUI();
+        }
     },
 
     getMainOverlord : function () {
         return this.getOverlord(game.dataCache.player_uid);
     },
 
-    isMainOverlord : function(lord){
-        if(lord){
-            return lord.uid === game.dataCache.player_uid;
-        }
-        return false;
+    isMainOverlord : function(uid){
+        return uid === game.dataCache.player_uid;
     },
 
     isMainOverlordTurn : function(){
-
         return this.isOverlordTurn(game.dataCache.player_uid);
     },
 
     isOverlordTurn : function (uid) {
-        if(this.curTurn){
-            return this.curTurn.getLordID() === uid;
-        }
-        return false;
+        return this.curTurnUID === uid;
     },
 
     getCurTurnOverlord : function(){
-        if(this.curTurn) return this.curTurn.lord;
-        return null;
+        return this.getOverlord(this.curTurnUID)
     },
-
-
 
     getOverlord : function (uid) {
         return this.overlords.find(function (lord) {
@@ -59,13 +49,13 @@ game.GameManager = me.Renderable.extend({
     addOverlord : function (lord) {
         this.overlords.push(lord);
     },
-
+    //需要把地图数据和领主数据link一下
     updateAllOverlordsTerritory : function () {
         var self = this;
         this.overlords.forEach(function (lord) {
             lord.ownTerritories.forEach(function (territoryData) {
                 //territoryData这里不但有hexCoord还有DiscNum等数据
-                var t = self.world.getTerritory(territoryData);
+                var t = self.world.getTerritory(territoryData.tid);
                 if(t){
                     t.setOverlord(lord);
                     t.setData(territoryData);
@@ -74,34 +64,50 @@ game.GameManager = me.Renderable.extend({
         });
     },
 
-    updateTerritory : function (uid,territoryData) {
+    updateTerritory : function (uid,territoryData,opt) {
+        let overlord = this.getOverlord(uid);
         //首先找到这个territory，然后设置
-        var territory = this.world.getTerritory(territoryData);
+        let territory = this.world.getTerritory(territoryData.tid);
         territory.setData(territoryData);
-        //找到overlord
-        var overlord = this.getOverlord(uid);
-        if(territory){
-            if(territory.overlord == null){
+        //
+        switch (opt) {
+            case 'add':{
+                overlord.addTerritory(territoryData);
                 territory.setOverlord(overlord);
-                overlord.updateTerritory(territoryData,false);
-
-            }else if(territory.overlord.uid === uid){
-                overlord.updateTerritory(territoryData,false);
-            }else if(territory.overlord.uid !== uid){
-                var old_overlord = this.getOverlord(territory.overlord.uid);
-                territory.setOverlord(overlord);
-                overlord.updateTerritory(territoryData,false);
-                old_overlord.updateTerritory(territoryData,true);
+                break;
+            }
+            case 'update':{
+                overlord.updateTerritory(territoryData);
+                break;
+            }
+            case 'delete' :{
+                if(overlord)
+                    overlord.removeTerritory(territoryData.tid);
+                territory.setOverlord(null);
+                break;
             }
         }
     },
 
-    setTurnQueen : function (turnsUID_Array) {
-        var self = this;
-        turnsUID_Array.forEach(function(uid){
-            var lord = self.getOverlord(uid);
-            self.turnQueen.push(new Turn(lord));
-        });
+    refreshUI : function(){
+
+        if(this.isMainOverlordTurn()){
+            //TODO UI update
+            if(this.ui) this.ui.showTerritoryBtn();
+        }else{
+            //TODO UI update
+            if(this.ui) this.ui.hideTerritoryBtn();
+        }
+    },
+
+    setCurTurnUID : function (curTurnUID,startTurnData) {
+        this.curTurnUID = curTurnUID;
+        let ap = startTurnData.ap;
+        let lord = this.getOverlord(this.curTurnUID);
+        if(lord){
+            lord.setAP(ap);
+        }
+        this.refreshUI();
     },
 
     vfxBubblingText : function (tid,label) {
@@ -111,71 +117,21 @@ game.GameManager = me.Renderable.extend({
 
     start : function(){
         this.ready = true;
+
+        this.world = me.game.world.getChildByName("WorldMap")[0];
+        this.vfx =   me.game.world.getChildByName("VFX")[0];
+        this.ui =   me.game.world.getChildByName("HUD")[0];
+
     },
 
     end : function () {
         this.ready = false;
     },
-    /*回合相关*/
-    startTurn : function(){
-        this.curTurn = this.turnQueen.shift();
-        this.curTurn.enter();
-    },
-    doTurn : function(){
-        if(!this.curTurn){
-            this.startTurn();
-        }
-        if(this.curTurn){
-            this.curTurn.execute();
-        }
-    },
-    endTurn : function(){
-        this.curTurn.exit();
-        this.turnQueen.push(this.curTurn);
-        this.curTurn = null;
-    },
-    
-    update : function (dt) {
-        if(this.ready){
-            this._super(me.Renderable, "update", [ dt ]);
-            this.doTurn();
-            //此处开始判断玩家是否还有territory
-            for(var i =0;i<this.overlords.length;++i){
-                if(!this.overlords[i].hasAnyTerritory()){
-                    this.overlords[i].doAction_LoseGame();
-                }
-            }
-        }
-    },
     //
-    overlordEndTurn : function(uid,round){
-        if(this.curTurn.getLordID() === uid){
-            this.endTurn();
-            this.round = round;
-            this.ui.hideTerritoryBtn();
-        }
-    },
-
-    overlordStartTurn : function (uid) {
-        while (this.curTurn.getLordID() !== uid){
-            this.endTurn();
-            this.startTurn();
-        }
-    },
-
-    overlordLoseGame : function(uid,round){
-        //首先强制结束这个玩家的回合
-        this.overlordEndTurn(uid,round);
-        //删除这个玩家的turn
-        for(var i = 0;i<this.turnQueen.length;++i){
-            if(this.turnQueen[i].getLordID() === uid){
-                this.turnQueen.splice(i,1);
-            }
-        }
+    overlordLoseGame : function(uid){
         //删除这个玩家，并告知原因
         for(i = 0;i<this.overlords.length;++i) {
             if(this.overlords[i].uid === uid){
-                this.overlords[i]._LoseGame();
                 this.overlords.splice(i,1);
             }
         }
@@ -184,16 +140,15 @@ game.GameManager = me.Renderable.extend({
             game.lose_game = true;
             me.state.change(me.state.GAMEOVER);
         }
-        //游戏成功
-        if( this.overlords.length === 1 &&
-            this.overlords[0].uid === game.dataCache.player_uid){
+    },
+    overlordWinGame : function (uid) {
+        if(uid === game.dataCache.player_uid){
             game.lose_game = false;
             me.state.change(me.state.GAMEOVER);
         }
-
-    },
+    }
 });
-
+/*
 function Turn(lord){
    this.lord = lord;
 }
@@ -216,7 +171,7 @@ Turn.prototype.getLordID = function(){
 Turn.prototype.implantAI = function () {
     this.ai = new AI_Simulate(this.lord);
 };
-
+*/
 function AI_Simulate(lord) {
     this.lord = lord;
     this.thinkStepLimit = 10;

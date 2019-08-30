@@ -52,7 +52,7 @@ game.HUD.Container = me.Container.extend({
                 }
             }
         );
-
+        /*
         this.func_btn = new game.HUD.Button(
             0,90,"FUNC A\n(测试)", function () {
                 var worldLayer = me.game.world.getChildByName("WorldMap")[0];
@@ -66,15 +66,16 @@ game.HUD.Container = me.Container.extend({
             120,90,"FUNC LOSE\n(测试)", function () {
                 me.state.current().gameManager.getMainOverlord().doAction_LoseGame();
             }
-        );
+        );*/
 
         this.addChild(this.up_A_btn);
         this.addChild(this.up_B_btn);
         this.addChild(this.attack_btn);
         this.addChild(this.pass_btn);
+        /*
         this.addChild(this.func_btn);
         this.addChild(this.lose_btn);
-
+        */
 
 
         this.updateChildBounds();
@@ -90,12 +91,10 @@ game.HUD.Container = me.Container.extend({
     },
 
     showTerritoryBtn : function () {
-        if(me.state.current().gameManager.isMainOverlordTurn()){
-            this.up_A_btn.show();
-            this.up_B_btn.show();
-            this.attack_btn.show();
-            this.pass_btn.show();
-        }
+        this.up_A_btn.show();
+        this.up_B_btn.show();
+        this.attack_btn.show();
+        this.pass_btn.show();
     },
 
     hideTerritoryBtn :function(){

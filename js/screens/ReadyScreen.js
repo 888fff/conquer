@@ -13,15 +13,19 @@ game.ReadyScreen = me.Stage.extend({
 
         this.bunker = new game.ReadyRenderable();
         me.game.world.addChild( this.bunker );
+        //
+        game.net.Start();
 
     },
 
     keyHandler: function (action, keyCode, edge) {
         if(keyCode === me.input.KEY.ENTER && !this.finished) {
+
         }
     },
 
     onDestroyEvent: function() {
+        me.game.world.removeChild( this.bunker );
 
     }
 });
@@ -47,17 +51,16 @@ game.ReadyRenderable = me.Renderable.extend({
 
     update: function( dt ) {
         //
+        this.label = game.dataCache.netInfo;
         this.counter += dt;
         var gap = Math.floor(this.counter) % 1800;
-        if(gap < 600){
-            this.label = "等待其他玩家.";
+        if (gap < 600) {
+            this.label = this.label + '.';
+        } else if (gap < 1200) {
+            this.label = this.label + '..';
+        } else if (gap < 1800) {
+            this.label = this.label + '...';
         }
-        else if(gap < 1200){
-            this.label = "等待其他玩家..";
-        }else if(gap < 1800){
-            this.label = "等待其他玩家...";
-        }
-
         if(game.launch_game && !this.exiting) {
             this.exiting = true;
             me.state.change(me.state.PLAY);

@@ -54,9 +54,9 @@ game.UI.Container = me.Container.extend({
         // register on the global pointermove event
         this.handler = me.event.subscribe(me.event.POINTERMOVE, this.pointerMove.bind(this));
         //register on mouse/touch event
-        me.input.registerPointerEvent("pointerdown", this, this.onSelect.bind(this));
-        me.input.registerPointerEvent("pointerup", this, this.onRelease.bind(this));
-        me.input.registerPointerEvent("pointercancel", this, this.onRelease.bind(this));
+        me.input.registerPointerEvent("pointerdown", this, this.onSelect.bind(this), false);
+        me.input.registerPointerEvent("pointerup", this, this.onRelease.bind(this), false);
+        me.input.registerPointerEvent("pointercancel", this, this.onRelease.bind(this), false);
 
         // call the parent function
         this._super(me.Container, "onActivateEvent");
