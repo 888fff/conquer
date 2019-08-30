@@ -71,7 +71,7 @@ NetLayer.prototype.Start = function(){
     //尝试链接网络
     game.dataCache.netInfo = '准备连接:'+this.host;
     console.warn(game.dataCache.netInfo);
-    this.socket = io(this. host + ':' + this.port + '?token='+this.token+'&user=' + game.dataCache.player_uid);
+    this.socket = io('http://' + this. host + ':' + this.port + '?token='+this.token+'&user=' + game.dataCache.player_uid);
     if(this.socket){
         this.Config();
     }
